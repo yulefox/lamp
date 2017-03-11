@@ -8,8 +8,8 @@
 [L2]: LICENSE
 [I3]: https://img.shields.io/travis/yulefox/lamp.svg?style=flat-square
 [L3]: https://travis-ci.org/yulefox/lamp
-[I4]: http://img.shields.io/coveralls/yulefox/lamp.svg?style=flat-square
-[L4]: https://coveralls.io/r/yulefox/lamp
+[I4]: https://img.shields.io/codecov/c/github/yulefox/lamp.svg?style=flat-square
+[L4]: https://codecov.io/gh/yulefox/lamp
 
 基于 [Echo](https://github.com/yulefox/lamp) 的 Web API 测试框架.
 
