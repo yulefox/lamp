@@ -1,4 +1,4 @@
 vendor
 glide.*
 .DS_Store
-coverage.out
+coverage.*
