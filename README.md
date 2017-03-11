@@ -6,6 +6,7 @@
 [L1]: http://godoc.org/github.com/yulefox/lamp
 [I2]: http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square
 [L2]: LICENSE
+[I3]: https://img.shields.io/travis/yulefox/lamp.svg?style=flat-square
 [L3]: https://travis-ci.org/yulefox/lamp
 [I4]: http://img.shields.io/coveralls/yulefox/lamp.svg?style=flat-square
 [L4]: https://coveralls.io/r/yulefox/lamp
