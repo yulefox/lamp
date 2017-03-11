@@ -1,4 +1,4 @@
-package lamp
+package main
 
 import (
 	"net/http"
