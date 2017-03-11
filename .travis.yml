@@ -5,6 +5,8 @@ go:
   - tip
 
 install:
+  - go get github.com/labstack/echo
+  - go get github.com/labstack/echo/middleware
   - go get github.com/mattn/goveralls
 
 script:
