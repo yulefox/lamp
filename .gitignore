@@ -2,3 +2,6 @@ vendor
 glide.*
 .DS_Store
 coverage.*
+lamp
+lamp_gm
+lamp.test

@@ -38,7 +38,7 @@ func (h TestLampHandler) HandleMessage(msg *nsq.Message) error {
 	return nil
 }
 
-func TestLamp(t *testing.T) {
+func TestLampRun(t *testing.T) {
 	h := &TestLampHandler{}
 	l, err := NewLamp(h)
 
