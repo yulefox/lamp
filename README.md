@@ -11,7 +11,13 @@
 [I4]: https://img.shields.io/codecov/c/github/yulefox/lamp.svg?style=flat-square
 [L4]: https://codecov.io/gh/yulefox/lamp
 
-基于 [Echo](https://github.com/yulefox/lamp) 的 Web API 测试框架.
+A web API frame based on [NSQ](http://nsq.io/) and [Echo](https://github.com/yulefox/lamp).
+
+## Stack
+
+## Install
+
+## Test
 
 ## License
 
