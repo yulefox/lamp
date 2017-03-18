@@ -4,8 +4,8 @@ import (
 	"errors"
 	"flag"
 
-	"lamp/contrib"
-	"lamp/core"
+	"github.com/yulefox/lamp/contrib"
+	"github.com/yulefox/lamp/core"
 
 	nsq "github.com/nsqio/go-nsq"
 )

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"lamp"
 	"log"
 
 	nsq "github.com/nsqio/go-nsq"
+	"github.com/yulefox/lamp"
 )
 
 // GMHandler handle for the `gm` topic
