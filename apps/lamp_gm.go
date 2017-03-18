@@ -1,4 +1,4 @@
-package main
+package apps
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	nsq "github.com/nsqio/go-nsq"
-	"github.com/yulefox/lamp"
+	"github.com/yulefox/lamp/core"
 )
 
 // GMHandler handle for the `gm` topic
@@ -44,14 +44,14 @@ func (h GMHandler) HandleMessage(msg *nsq.Message) error {
 }
 
 // Run run
-func Run() error {
-	h := &GMHandler{}
-	l, err := lamp.NewLamp(h)
+func (h GMHandler) Run() error {
+	l, err := core.NewLamp(h)
 
 	if err != nil {
 		return nil
 	}
 
+	l.Off()
 	<-l.Consumer.StopChan
 	return nil
 }

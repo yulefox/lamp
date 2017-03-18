@@ -1,11 +1,10 @@
-package lamp
+package core
 
 import (
 	"errors"
 	"flag"
 
 	"github.com/yulefox/lamp/contrib"
-	"github.com/yulefox/lamp/core"
 
 	nsq "github.com/nsqio/go-nsq"
 )
@@ -22,6 +21,7 @@ type Lamp struct {
 
 // ILamp Lamp interface
 type ILamp interface {
+	Run() error
 	Output(calldepth int, s string) error
 	HandleMessage(message *nsq.Message) error
 }
@@ -67,7 +67,7 @@ func (l *Lamp) Off() error {
 
 // Reload reloads the Lamp
 func (l *Lamp) Reload() error {
-	if err := core.LoadConfig(configFilename, &l.config); err != nil {
+	if err := LoadConfig(configFilename, &l.config); err != nil {
 		return err
 	}
 
