@@ -48,6 +48,7 @@ func TestLamp(t *testing.T) {
 
 	t.Logf("%+v\n", l.Consumer.Stats())
 	l.On()
+	l.Off()
 
 	<-l.Consumer.StopChan
 }

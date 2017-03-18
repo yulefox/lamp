@@ -2,4 +2,4 @@
 
 export LAMP_CONFIG_PATH=$PWD/contrib
 
-go test -v -timeout 300s
+go test -v -race -coverprofile=coverage.txt -covermode=atomic -timeout 30s
