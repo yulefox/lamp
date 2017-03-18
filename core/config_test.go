@@ -1,8 +1,9 @@
 package core
 
 import (
-	"lamp/contrib"
 	"testing"
+
+	"github.com/yulefox/lamp/contrib"
 )
 
 func TestLoadConfig(t *testing.T) {
