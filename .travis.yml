@@ -10,7 +10,7 @@ before_install:
 
 script:
   - export LAMP_CONFIG_PATH=$PWD/contrib
-  - go test -race -coverprofile=coverage.txt -covermode=atomic
+  - go test -race -coverprofile=coverage.txt -covermode=atomic -timeout 30s
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
