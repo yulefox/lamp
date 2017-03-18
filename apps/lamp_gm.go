@@ -11,12 +11,7 @@ import (
 
 // GMHandler handle for the `gm` topic
 type GMHandler struct {
-}
-
-// Output logger
-func (h GMHandler) Output(calldepth int, s string) error {
-	fmt.Println(s)
-	return nil
+	core.Delegate
 }
 
 // HandleMessage message handler for the `gm` topic
@@ -40,18 +35,5 @@ func (h GMHandler) HandleMessage(msg *nsq.Message) error {
 	}
 
 	fmt.Printf("%+v\n", event)
-	return nil
-}
-
-// Run run
-func (h GMHandler) Run() error {
-	l, err := core.NewLamp(h)
-
-	if err != nil {
-		return nil
-	}
-
-	l.Off()
-	<-l.Consumer.StopChan
 	return nil
 }

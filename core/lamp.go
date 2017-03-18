@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"flag"
+	"fmt"
 
 	"github.com/yulefox/lamp/contrib"
 
@@ -21,9 +22,25 @@ type Lamp struct {
 
 // ILamp Lamp interface
 type ILamp interface {
-	Run() error
 	Output(calldepth int, s string) error
 	HandleMessage(message *nsq.Message) error
+}
+
+// Delegate Lamp delegate
+type Delegate struct {
+	Lamp
+}
+
+// Output logger
+func (d Delegate) Output(calldepth int, s string) error {
+	fmt.Println(s)
+	return nil
+}
+
+// HandleMessage message handler for the `gm` topic
+func (d Delegate) HandleMessage(msg *nsq.Message) error {
+	fmt.Printf("%+v\n", msg)
+	return nil
 }
 
 // NewLamp creates a new instance of Lamp as a microservice

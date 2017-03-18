@@ -11,13 +11,25 @@
 [I4]: https://img.shields.io/codecov/c/github/yulefox/lamp.svg?style=flat-square
 [L4]: https://codecov.io/gh/yulefox/lamp
 
-A web API frame based on [NSQ](http://nsq.io/) and [Echo](https://github.com/yulefox/lamp).
+A Go microservice frame based on [NSQ](http://nsq.io/).
 
 ## Stack
 
+- go(>= go1.6)
+- glide
+- nsq
+
 ## Install
 
+```sh
+glide install
+```
+
 ## Test
+
+```sh
+./test.sh
+```
 
 ## License
 
