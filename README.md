@@ -11,13 +11,13 @@
 [I4]: https://img.shields.io/codecov/c/github/yulefox/lamp.svg?style=flat-square
 [L4]: https://codecov.io/gh/yulefox/lamp
 
-A Go microservice frame based on [NSQ](http://nsq.io/).
+A Go microservice frame based on NSQ.
 
 ## Stack
 
-- go(>= go1.6)
-- glide
-- nsq
+- [Go](https://golang.org)(>= go1.6)
+- [Glide](https://glide.sh)
+- [NSQ](http://nsq.io)
 
 ## Install
 
