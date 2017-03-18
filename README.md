@@ -15,7 +15,7 @@ A Go microservice frame based on NSQ.
 
 ## Stack
 
-- [Go](https://golang.org)(>= go1.6)
+- [Go](https://golang.org)
 - [Glide](https://glide.sh)
 - [NSQ](http://nsq.io)
 

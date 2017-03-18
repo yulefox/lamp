@@ -6,16 +6,16 @@ import (
 	"fmt"
 
 	nsq "github.com/nsqio/go-nsq"
-	"github.com/yulefox/lamp/core"
+	"github.com/yulefox/lamp"
 )
 
-// GMHandler handle for the `gm` topic
-type GMHandler struct {
-	core.Delegate
+// GM handle for the `gm` topic
+type GM struct {
+	lamp.Lamp
 }
 
 // HandleMessage message handler for the `gm` topic
-func (h GMHandler) HandleMessage(msg *nsq.Message) error {
+func (l GM) HandleMessage(msg *nsq.Message) error {
 	if string(msg.Body) == "TOBEFAILED" {
 		return errors.New("fail this message")
 	}

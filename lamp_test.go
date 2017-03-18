@@ -1,12 +1,12 @@
-package apps
+package lamp
 
 import (
 	"testing"
 	"time"
 )
 
-func TestLampGM(t *testing.T) {
-	l := &GM{}
+func TestLamp(t *testing.T) {
+	l := &Lamp{}
 	err := l.On()
 
 	if err != nil {
