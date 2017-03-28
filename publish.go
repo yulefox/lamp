@@ -7,10 +7,6 @@ import (
 	"net/http"
 )
 
-// APIRequest wrap API request within Echo
-type APIRequest struct {
-}
-
 // NSQPublish publish message to given `topic`
 func NSQPublish(addr string, topic string, msg []byte) (err error) {
 	url := fmt.Sprintf("http://%s/pub?topic=%s", addr, topic)
