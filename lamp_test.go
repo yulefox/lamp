@@ -2,22 +2,31 @@ package lamp
 
 import (
 	"testing"
+
+	"os"
+
 	"time"
+
+	nsq "github.com/nsqio/go-nsq"
 )
 
 type Hello struct {
-	Lamp
-	a string
+}
+
+// EchoServe run echo server
+func (s *Hello) EchoServe() {
+}
+
+// HandleMessage message handler for the `cmd` topic
+func (s *Hello) HandleMessage(msg *nsq.Message) (err error) {
+	return
 }
 
 func TestLamp(t *testing.T) {
-	l := &Hello{Lamp: Lamp{ConfigFilename: "kits/history/lamp.json"}}
-	err := l.On()
-
-	if err != nil {
-		return
-	}
-
-	<-time.After(60 * time.Second)
-	l.Off()
+	s := &Hello{}
+	go On(s)
+	<-time.After(1 * time.Second)
+	pid := os.Getpid()
+	p, _ := os.FindProcess(pid)
+	p.Signal(os.Interrupt)
 }

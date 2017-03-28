@@ -14,10 +14,4 @@ func TestLoadConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if conf.Topic != "gm" {
-		t.Errorf("Unexpected topic: %s", conf.Topic)
-	}
-	if conf.Channel != "log" {
-		t.Errorf("Unexpected channel: %s", conf.Channel)
-	}
 }
