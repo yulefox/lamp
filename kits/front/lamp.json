@@ -1,0 +1,23 @@
+{
+    "lamp": [
+        {
+            "topic": "cmd_res",
+            "channel": "echo",
+            "log_level": "LogInfo",
+            "nsqd_addrs": [
+                "localhost:4150"
+            ],
+            "nsqlookupd_addrs": [
+                "localhost:4161"
+            ],
+            "nsq_config": [
+                "--nsq-opt=read_timeout,10s",
+                "--nsq-opt=write_timeout,1s",
+                "--nsq-opt=default_requeue_delay,60s",
+                "--nsq-opt=heartbeat_interval,10s",
+                "--nsq-opt=max_in_flight,5",
+                "--nsq-opt=auth_secret,auth"
+            ]
+        }
+    ]
+}

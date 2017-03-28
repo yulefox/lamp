@@ -2,8 +2,8 @@ package contrib
 
 import nsq "github.com/nsqio/go-nsq"
 
-// LampConfig for Lamp
-type LampConfig struct {
+// LampNode for Lamp
+type LampNode struct {
 	Topic            string   `json:"topic"`
 	Channel          string   `json:"channel"`
 	NSQDAddrs        []string `json:"nsqd_addrs"`
@@ -11,4 +11,9 @@ type LampConfig struct {
 	LogLevel         string   `json:"log_level"`
 	NSQConfigFlagSet []string `json:"nsq_config"`
 	NSQConfig        *nsq.Config
+}
+
+// LampConfig for Lamp
+type LampConfig struct {
+	Nodes []LampNode `json:"lamp"`
 }

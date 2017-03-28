@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-export LAMP_CONFIG_PATH=$PWD/contrib
+export LAMP_CONFIG_PATH=$PWD
 
 echo "" > coverage.txt
 

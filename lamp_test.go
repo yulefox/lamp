@@ -5,8 +5,13 @@ import (
 	"time"
 )
 
+type Hello struct {
+	Lamp
+	a string
+}
+
 func TestLamp(t *testing.T) {
-	l := &Lamp{}
+	l := &Hello{Lamp: Lamp{ConfigFilename: "kits/history/lamp.json"}}
 	err := l.On()
 
 	if err != nil {

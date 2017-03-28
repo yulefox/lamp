@@ -5,78 +5,81 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/yulefox/lamp/contrib"
-	"github.com/yulefox/lamp/internal"
+	"os"
+
+	"os/signal"
 
 	nsq "github.com/nsqio/go-nsq"
+	"github.com/yulefox/lamp/contrib"
 )
 
-var configFilename = "lamp.json"
+// Shade interface
+type Shade interface {
+	EchoServe()
+	HandleMessage(message *nsq.Message) error
+}
 
 // Lamp microservice
 type Lamp struct {
-	config contrib.LampConfig
-
-	// NSQ Consumer
-	consumer *nsq.Consumer
+	consumers map[string]*nsq.Consumer
 }
 
 // On turns on the Lamp
-func (l *Lamp) On() error {
-	l.config.NSQConfig = nsq.NewConfig()
+func On(s Shade) (l *Lamp, err error) {
+	l = &Lamp{
+		consumers: make(map[string]*nsq.Consumer),
+	}
 
-	if err := l.Reload(); err != nil {
+	config := &contrib.LampConfig{}
+	err = LoadConfig("lamp.json", config)
+	if err != nil {
 		panic(err)
 	}
 
-	c, err := nsq.NewConsumer(l.config.Topic, l.config.Channel, l.config.NSQConfig)
-	if err != nil {
-		return err
+	for _, n := range config.Nodes {
+		n.NSQConfig = nsq.NewConfig()
+		flagSet := flag.NewFlagSet("", flag.ExitOnError)
+		flagSet.Var(&nsq.ConfigFlag{Config: n.NSQConfig}, "nsq-opt", "option to pass through to nsq.Consumer (may be given multiple times)")
+
+		err = flagSet.Parse(n.NSQConfigFlagSet)
+		if err != nil {
+			return
+		}
+
+		var c *nsq.Consumer
+		c, err = nsq.NewConsumer(n.Topic, n.Channel, n.NSQConfig)
+		if err != nil {
+			return
+		}
+		c.AddHandler(s)
+		c.SetLogger(l, nsq.LogLevelInfo)
+
+		err = c.ConnectToNSQLookupds(n.LookupAddrs)
+		if err != nil {
+			return
+		}
+		l.consumers[n.Topic] = c
 	}
-	c.AddHandler(l)
-	c.SetLogger(l, nsq.LogLevelInfo)
+	go s.EchoServe()
 
-	if err := c.ConnectToNSQLookupds(l.config.LookupAddrs); err != nil {
-		return err
-	}
-	l.consumer = c
-	return nil
-}
+	c := make(chan os.Signal, 1)
+	signal.Notify(c,
+		os.Interrupt,
+		os.Kill,
+	)
 
-// Off turns off the Lamp
-func (l *Lamp) Off() error {
-	l.consumer.Stop()
-	return nil
-}
-
-// Reload reloads the Lamp
-func (l *Lamp) Reload() error {
-	if err := internal.LoadConfig(configFilename, &l.config); err != nil {
-		return err
-	}
-
-	flagSet := flag.NewFlagSet("", flag.ExitOnError)
-	flagSet.Var(&nsq.ConfigFlag{Config: l.config.NSQConfig}, "nsq-opt", "option to pass through to nsq.Consumer (may be given multiple times)")
-
-	if err := flagSet.Parse(l.config.NSQConfigFlagSet); err != nil {
-		return err
-	}
-	return nil
+	<-c
+	return
 }
 
 // Restart restarts the Lamp
-func (l *Lamp) Restart() error {
-	return errors.New("NO implementation")
+func (l *Lamp) Restart() (err error) {
+	err = errors.New("NO implementation")
+	return
 }
 
 // Output logger
-func (l *Lamp) Output(calldepth int, s string) error {
+func (l *Lamp) Output(calldepth int, s string) (err error) {
 	fmt.Println(s)
-	return nil
-}
-
-// HandleMessage message handler for the `gm` topic
-func (l Lamp) HandleMessage(msg *nsq.Message) error {
-	fmt.Printf("%+v\n", msg)
-	return nil
+	return
 }
