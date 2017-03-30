@@ -30,6 +30,7 @@ func init() {
 }
 
 func serveAPIv1(c echo.Context) (err error) {
+	topic := c.Param("topic")
 	api := c.Param("api")
 	params := c.QueryParams()
 
@@ -44,7 +45,7 @@ func serveAPIv1(c echo.Context) (err error) {
 	if err != nil {
 		return
 	}
-	lamp.NSQPublish("localhost:4151", "cmd_req", json)
+	lamp.NSQPublish("localhost:4151", topic, json)
 	reqC <- req
 	res, ok := <-req.Res
 	if ok {
@@ -79,7 +80,7 @@ func (s *Serve) EchoServe() {
 	e := echo.New()
 	g := e.Group("/api/v1")
 
-	g.GET("/:api", serveAPIv1)
+	g.GET("/:topic/:api", serveAPIv1)
 	e.Start(":8000")
 }
 
