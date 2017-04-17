@@ -10,12 +10,12 @@ import (
 
 // Option .
 type Option struct {
-	User     string `opt:"user" default:"root"`
-	Password string `opt:"password" default:"root"`
-	Host     string `opt:"host" default:"localhost"`
-	Port     int    `opt:"port" default:"3306"`
-	Name     string `opt:"name" default:"test"`
-	CharSet  string `opt:"charset" default:"utf8"`
+	User     string `json:"user" opt:"user" default:"root"`
+	Password string `json:"password" opt:"password" default:"root"`
+	Host     string `json:"host" opt:"host" default:"localhost"`
+	Port     int    `json:"port" opt:"port" default:"3306"`
+	Name     string `json:"name" opt:"name" default:"test"`
+	CharSet  string `json:"char_set" opt:"charset" default:"utf8"`
 }
 
 // Context .
