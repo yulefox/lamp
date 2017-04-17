@@ -1,8 +1,12 @@
 #!/bin/sh
 set -e
 
-file=$1
-dir=`dirname $file`
+in=$1
+dir=`dirname $in`
 export LAMP_CONFIG_PATH=$PWD/$dir
 
-go run $file
+if [ -f $in ] ; then
+    go run $in
+else
+    go test $in
+fi

@@ -18,17 +18,24 @@ A Go microservice frame based on NSQ.
 - [Go](https://golang.org)
 - [Glide](https://glide.sh)
 - [NSQ](http://nsq.io)
+- [Echo](http://github.com/labstack/echo)
 
 ## Install
 
 ```sh
-glide install
+glide update
 ```
 
 ## Test
 
 ```sh
 ./test.sh
+```
+
+## Usage
+
+```go
+lamp.On(s)
 ```
 
 ## License
