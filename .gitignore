@@ -3,3 +3,4 @@ glide.lock
 .DS_Store
 coverage.*
 *.json
+*.csv

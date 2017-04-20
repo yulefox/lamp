@@ -14,20 +14,25 @@ import (
 	"sync/atomic"
 	"time"
 
+	"strings"
+
 	"github.com/urfave/cli"
+	"github.com/yulefox/lamp/internal/cmd"
+	"github.com/yulefox/lamp/internal/daub"
 	"github.com/yulefox/lamp/internal/db"
 )
 
 var (
+	timeLayout = "2006-01-02 03:04"
 	workersNum = 50
 	conf       config
-	lastTime   int32
 	wg         sync.WaitGroup
 	rolesNum   int32
-	levels     []level
+	levels     db.Levels
 	ch         chan db.Role
 	chExit     chan bool
 	roles      db.Roles
+	names      []Name
 )
 
 type config struct {
@@ -42,84 +47,190 @@ type server struct {
 	Index        string
 	Servers      [][]int32 `json:"servers"`
 	Host         string    `json:"host"`
-	StartTime    string    `json:"start_time"`
-	maxLevel     int32
+	StartTimeStr string    `json:"start_time"`
+	StartTime    time.Time
+	NowTime      time.Time
+	Duration     time.Duration
 	maxTotalTime int32
 }
 
-type level struct {
-	lvlA       int32
-	lvlB       int32
-	vipM       int32
-	combatA    int32
-	combatB    int32
-	totalTimeA int32
-	totalTimeB int32
-	rate       int32
-	rateVIP    int32
+// Name .
+type Name struct {
+	Name  string `json:"name"`  // 角色名
+	Class int32  `json:"class"` // 职业
+	VIP   int32  `json:"vip"`   // VIP
+	Level int32  `json:"level"` // 等级
 }
 
-func (c *config) load(filename, dbNo string) {
-	buf, err := ioutil.ReadFile(filename)
+func (c *config) load(fileName, dbNo string) {
+	buf, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		panic(err)
 	}
 	json.Unmarshal(buf, c)
 	c.server = c.DBs[dbNo]
 	c.server.Index = dbNo
-	c.Opt.Name = "agame_" + dbNo
+	c.server.StartTime, _ = time.Parse(timeLayout, conf.server.StartTimeStr)
+	c.server.NowTime = time.Now()
+	c.server.Duration = c.server.NowTime.Sub(c.server.StartTime)
+	conf.server.maxTotalTime = int32(c.server.Duration.Seconds() / 2.5)
+	if _, err := strconv.Atoi(dbNo); err != nil {
+		c.Opt.Name = dbNo
+	} else {
+		c.Opt.Name = "agame_" + dbNo
+	}
 	c.Opt.Host = conf.Hosts[c.server.Host]
 	c.context = db.NewContext(c.Opt)
 }
 
-func calcLevel(r *db.Role) {
-	rn := rand.Int31n(10000)
-	var lc, ln level
+func avg(v1, c1, v2, c2 int32) int32 {
+	return (v1*c1 + v2*c2) / (c1 + c2)
+}
 
-	for i, lvl := range levels {
-		if r.VIP == 0 {
-			if rn < lvl.rate {
-				lc = levels[i]
-				ln = levels[i+1]
-				break
-			}
-		} else if r.VIP <= lvl.vipM {
-			if rn < lvl.rateVIP {
-				lc = levels[i]
-				ln = levels[i+1]
-				break
-			}
-		}
-	}
-	r.Level = lc.lvlA
-	r.Combat = lc.combatA
-	if lc.combatB > 0 {
-		r.Combat += rand.Int31n(lc.combatB)
-	}
-	r.TotalTime = lc.totalTimeA
-	if lc.totalTimeB > 0 {
-		r.TotalTime += rand.Int31n(lc.totalTimeB)
-	}
-
-	// rand level
-	d := int32(0)
-	if lc.lvlB > 0 {
-		d = rand.Int31n(lc.lvlB)
-	}
-	if d > 0 {
-		r.Level += d
-		if ln.combatA > lc.combatA {
-			r.Combat += d * (ln.combatA - lc.combatA) / lc.lvlB
-		}
-		if ln.totalTimeA > lc.totalTimeA {
-			r.TotalTime += d * (ln.totalTimeA - lc.totalTimeA) / lc.lvlB
+func mergeLevels(src, dst db.Levels) {
+	for k, vs := range src {
+		if vd, exists := dst[k]; exists {
+			vd.CombatAvg = avg(vs.CombatAvg, vs.Count, vd.CombatAvg, vd.Count)
+			vd.CombatMin = avg(vs.CombatMin, vs.Count, vd.CombatMax, vd.Count)
+			vd.CombatMax = avg(vs.CombatMax, vs.Count, vd.CombatMax, vd.Count)
+			vd.TotalTimeAvg = avg(vs.TotalTimeAvg, vs.Count, vd.TotalTimeAvg, vd.Count)
+			vd.TotalTimeMin = avg(vs.TotalTimeMin, vs.Count, vd.TotalTimeMin, vd.Count)
+			vd.TotalTimeMax = avg(vs.TotalTimeMax, vs.Count, vd.TotalTimeMax, vd.Count)
+			vd.Count += vs.Count
+		} else {
+			vd = &db.Level{}
+			db.Merge(vs, vd, true)
+			dst[k] = vd
 		}
 	}
 }
 
-func fixEnterTime(r *db.Role) {
-	atomic.AddInt32(&rolesNum, 1)
+func calcSampleLevels(c *cli.Context) {
+	file := c.Args().Get(0)
+	dbName := c.Args().Get(1)
+	conf.load(file, dbName)
+
+	sql := "query_levels_active"
+	days := 10000
+	for dbName := range conf.DBs {
+		fileName := fmt.Sprintf("%s_%d_%s.json", sql, days, dbName)
+		buf, err := ioutil.ReadFile(fileName)
+		ls := make(db.Levels)
+
+		if err != nil {
+			continue
+		}
+		err = json.Unmarshal(buf, &ls)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(fileName)
+		mergeLevels(ls, levels)
+	}
+
+	var buf bytes.Buffer
+	fileName := fmt.Sprintf("%s_%d_fixed.json", sql, days)
+	b, _ := json.MarshalIndent(levels, "", "  ")
+	buf.Write(b)
+	ioutil.WriteFile(fileName, buf.Bytes(), 0644)
+}
+
+func calcSampleNames(c *cli.Context) {
+	file := c.Args().Get(0)
+	dbName := c.Args().Get(1)
+	conf.load(file, dbName)
+	names = make([]Name, 0)
+
+	sql := "get_roles"
+	for dbName := range conf.DBs {
+		fileName := fmt.Sprintf("%s_%s.json", sql, dbName)
+		buf, err := ioutil.ReadFile(fileName)
+		ns := make([]Name, 100000)
+
+		if err != nil {
+			continue
+		}
+		err = json.Unmarshal(buf, &ns)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(fileName)
+		names = append(names, ns...)
+	}
+
+	var buf bytes.Buffer
+	fileName := fmt.Sprintf("%s_fixed.json", sql)
+	b, _ := json.MarshalIndent(names, "", "  ")
+	buf.Write(b)
+	ioutil.WriteFile(fileName, buf.Bytes(), 0644)
+}
+
+func sampleNames(c *cli.Context) {
+	file := c.Args().Get(0)
+	dbName := c.Args().Get(1)
+	conf.load(file, dbName)
+	d := conf.context.DB
+	sql := "get_roles"
+
+	db.GetRoles(d, roles, sql)
+	names = make([]Name, 0)
+
+	for _, r := range roles {
+		n := Name{r.Name, r.Class, r.VIP, r.Level}
+		names = append(names, n)
+	}
+
+	var buf bytes.Buffer
+	fileName := fmt.Sprintf("%s_%s.json", sql, dbName)
+	b, _ := json.MarshalIndent(names, "", "  ")
+	buf.Write(b)
+	ioutil.WriteFile(fileName, buf.Bytes(), 0644)
+}
+
+func sampleLevels(c *cli.Context) {
+	file := c.Args().Get(0)
+	dbName := c.Args().Get(1)
+	conf.load(file, dbName)
+	d := conf.context.DB
+	sql := "query_levels_active"
+	days := 10000
+
+	db.GetLevels(d, levels, sql, days)
+
+	var buf bytes.Buffer
+	fileName := fmt.Sprintf("%s_%d_%s.json", sql, days, dbName)
+	b, _ := json.MarshalIndent(levels, "", "  ")
+	buf.Write(b)
+	ioutil.WriteFile(fileName, buf.Bytes(), 0644)
+}
+
+func fixRole(r *db.Role) {
+	r.MoneyA = rand.Int31n((r.Level+r.VIP)*5 + 1)
+	r.MoneyB = rand.Int31n(int32(math.Pow(float64(r.Level+r.VIP), 3)*0.5+1)) + rand.Int31n(int32(math.Pow(float64(r.Level+r.VIP), 2)*0.8+1))
+	r.Class = 101 + rand.Int31n(3)
+}
+
+func randClock() time.Duration {
+	h := rand.Int63n(24)
+	if h > 0 && h < 9 {
+		h = rand.Int63n(24)
+	}
+	m := rand.Int63n(60)
+	s := rand.Int63n(60)
+	return time.Duration(h*3600 + m*60 + s*60)
+}
+
+/*
+func fixTime(r *db.Role) {
+	ct := time.Unix(int64(r.CreateTime), 0).Truncate(24 * time.Hour).Add(randClock())
+	r.CreateTime = int32(ct.Unix())
 	r.EnterTime = r.CreateTime + int32(float32(r.TotalTime)*(2.0+rand.Float32()*12.0))
+	et := time.Unix(int64(r.EnterTime), 0)
+	now := conf.server.NowTime
+	if et.After(now) {
+		et = now.Add(time.Duration(-rand.Int31n(10000)))
+		r.EnterTime = int32(et.Unix())
+	}
 	if r.EnterTime > lastTime {
 		r.EnterTime = lastTime - 10000
 	}
@@ -129,12 +240,27 @@ func fixEnterTime(r *db.Role) {
 		r.LeaveTime = r.EnterTime + rand.Int31n(r.TotalTime)
 	}
 }
+*/
 
-func fixLevel(r *db.Role) {
-	atomic.AddInt32(&rolesNum, 1)
-	calcLevel(r)
-	r.MoneyA = rand.Int31n((r.Level+r.VIP)*5 + 1)
-	r.MoneyB = rand.Int31n(int32(math.Pow(float64(r.Level+r.VIP), 3)*0.5+1)) + rand.Int31n(int32(math.Pow(float64(r.Level+r.VIP), 2)*0.8+1))
+func fixRoles(roles db.Roles) {
+	sum := int32(0)
+	ls := make(map[int32]int32)
+
+	for _, v := range roles {
+		v.Name = daub.CalcName(v.VIP)
+
+		//fixRole(v)
+		//fixTime(v)
+		//fixOrder(v)
+		ch <- *v
+		//ls[v.Level]++
+	}
+
+	for i := int32(1); i <= 110; i++ {
+		sum += ls[i]
+		fmt.Println(i, sum)
+	}
+	fmt.Println(rolesNum)
 }
 
 func updateRoles(stmt *sql.Stmt) {
@@ -179,33 +305,10 @@ func fix(c *cli.Context) {
 	file := c.Args().Get(0)
 	dbNo := c.Args().Get(1)
 	conf.load(file, dbNo)
-
-	t, _ := time.Parse("2006-01-02 03:04", conf.server.StartTime)
-	mt := int32(time.Now().Sub(t).Seconds() * 2 / 5)
-	conf.server.maxTotalTime = mt
-	for i, l := range levels {
-		dtA := mt - l.totalTimeA
-		dtB := l.totalTimeB - dtA
-		if dtB > 0 {
-			levels[i].totalTimeB = dtA
-		}
-		if dtA < 0 {
-			levels[i-1].lvlB *= dtA / (levels[i].totalTimeA - levels[i-1].totalTimeA)
-			levels[i-1].rate = 10000
-			levels[i-1].rateVIP = 10000
-			levels[i].totalTimeA = mt
-			levels[i].totalTimeB = 0
-			conf.server.maxLevel = levels[i-1].lvlA + levels[i-1].lvlB
-			break
-		}
-	}
 	db.GetRoles(conf.context.DB, roles, "query_roles")
-	for _, r := range roles {
-		calcLevel(r)
-		fixLevel(r)
-		fixEnterTime(r)
-		ch <- *r
-	}
+	atomic.AddInt32(&rolesNum, int32(len(roles)))
+	fixRoles(roles)
+	os.Exit(0)
 
 	stmt, err := conf.context.Prepare(db.Queries["update_role"])
 
@@ -243,46 +346,65 @@ func top(c *cli.Context) {
 	d := conf.context.DB
 
 	fmt.Println(conf.Opt)
-	db.GetCharges(d, roles, "query_charges", 500)
+	db.GetCharges(d, roles, "query_charges", 1000)
 	d.Close()
 
-	var csv bytes.Buffer
+	ra := make([]*db.Role, 0)
 	for _, r := range roles {
 		dbName = dbname(r)
 		conf.load(file, dbName)
 		d = conf.context.DB
 		db.GetRoles(d, roles, "get_role", r.ID)
+		fmt.Println(r)
+		ra = append(ra, r)
 		d.Close()
-		csv.WriteString(r.CSVString())
 	}
-	ioutil.WriteFile("top.csv", csv.Bytes(), 0644)
+	m := map[string]interface{}{"roles": ra}
+
+	var buf bytes.Buffer
+	fileName := "top1000.json"
+	b, _ := json.MarshalIndent(m, "", "  ")
+	buf.Write(b)
+	ioutil.WriteFile(fileName, buf.Bytes(), 0644)
+	cmd.SCP("20202", fileName, "juice@sdk.91juice.com:/juice/gmproxy/json")
+	os.Exit(0)
+}
+
+func dist(c *cli.Context) {
+	file := c.Args().Get(0)
+	sql := c.Args().Get(1)
+	dbNames := make([]string, 0)
+	if c.NArg() > 2 {
+		dbs := c.Args().Get(2)
+		dbNames = strings.Split(dbs, ",")
+	} else {
+		dbNames = []string{"1001", "2001", "2070", "2136", "2154", "2161", "2173", "2174", "2175", "2176", "2177", "6001", "6030", "6036", "6039", "9001", "9011", "9020"}
+	}
+	dists := make(db.Dists)
+	for _, dbName := range dbNames {
+		conf.load(file, dbName)
+		d := conf.context.DB
+
+		db.GetDistribution(d, dists, sql)
+	}
+	da := make([]*db.Dist, 0)
+	for _, v := range dists {
+		da = append(da, v)
+	}
+	m := map[string]interface{}{"dist": da}
+
+	var buf bytes.Buffer
+	fileName := sql + ".json"
+	b, _ := json.MarshalIndent(m, "", "  ")
+	buf.Write(b)
+	ioutil.WriteFile(fileName, buf.Bytes(), 0644)
+	cmd.SCP("20202", fileName, "juice@sdk.91juice.com:/juice/gmproxy/json")
 	os.Exit(0)
 }
 
 func init() {
-	t := time.Now()
-	rand.Seed(t.UnixNano())
-
-	lastTime = int32(t.Unix())
-	fmt.Println(t, lastTime)
-
-	levels = []level{
-		{1, 1, 0, 420, 0, 20, 5000, 1894, 0},
-		{2, 1, 0, 499, 1021, 605, 10001, 2613, 0},
-		{3, 8, 1, 577, 1801, 1032, 30030, 4924, 150},
-		{11, 10, 2, 1282, 5028, 4022, 40002, 6045, 1000},
-		{21, 10, 3, 3562, 20816, 8113, 100801, 8121, 3894},
-		{31, 10, 4, 8954, 40501, 17129, 202013, 9253, 8613},
-		{41, 10, 6, 18026, 81303, 77201, 400020, 9990, 9920},
-		{51, 10, 8, 43027, 153047, 102082, 601030, 10000, 9999},
-		{61, 10, 9, 78019, 200035, 271004, 802191, 10000, 10000},
-		{71, 10, 11, 150401, 261012, 602021, 1200303, 10000, 10000},
-		{81, 10, 15, 310301, 350203, 1501019, 1503205, 10000, 10000},
-		{91, 10, 15, 450282, 601210, 2200281, 2000011, 10000, 10000},
-		{101, 10, 15, 450282, 601210, 4200281, 0, 10000, 10000},
-	}
-
-	roles = make(map[int64]*db.Role)
+	roles = make(db.Roles)
+	levels = make(db.Levels)
 	ch = make(chan db.Role, 65535)
 	chExit = make(chan bool, workersNum)
 }
@@ -290,7 +412,7 @@ func init() {
 // Run .
 func Run(args []string) {
 	app := cli.NewApp()
-	app.Action = top
+	app.Action = fix
 	app.Run(args)
 }
 
