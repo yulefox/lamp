@@ -35,52 +35,12 @@ var (
 	names      []Name
 )
 
-type config struct {
-	Opt     db.Option         `json:"db_opt"`
-	Hosts   map[string]string `json:"hosts"`
-	DBs     map[string]server `json:"dbs"`
-	server  server
-	context *db.Context
-}
-
-type server struct {
-	Index        string
-	Servers      [][]int32 `json:"servers"`
-	Host         string    `json:"host"`
-	StartTimeStr string    `json:"start_time"`
-	StartTime    time.Time
-	NowTime      time.Time
-	Duration     time.Duration
-	maxTotalTime int32
-}
-
 // Name .
 type Name struct {
 	Name  string `json:"name"`  // 角色名
 	Class int32  `json:"class"` // 职业
 	VIP   int32  `json:"vip"`   // VIP
 	Level int32  `json:"level"` // 等级
-}
-
-func (c *config) load(fileName, dbNo string) {
-	buf, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		panic(err)
-	}
-	json.Unmarshal(buf, c)
-	c.server = c.DBs[dbNo]
-	c.server.Index = dbNo
-	c.server.StartTime, _ = time.Parse(timeLayout, conf.server.StartTimeStr)
-	c.server.NowTime = time.Now()
-	c.server.Duration = c.server.NowTime.Sub(c.server.StartTime)
-	conf.server.maxTotalTime = int32(c.server.Duration.Seconds() / 2.5)
-	if _, err := strconv.Atoi(dbNo); err != nil {
-		c.Opt.Name = dbNo
-	} else {
-		c.Opt.Name = "agame_" + dbNo
-	}
-	c.Opt.Host = conf.Hosts[c.server.Host]
-	c.context = db.NewContext(c.Opt)
 }
 
 func avg(v1, c1, v2, c2 int32) int32 {

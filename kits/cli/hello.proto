@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package proto;
+
+service Greeter {
+    rpc SayHello(Hello.Req) returns (Hello.Res) {}
+}
+
+message Event {
+    int32 type = 1;
+}
+
+service GameService {
+    rpc Stream(stream Event) returns (stream Event);
+}
+
+message Hello {
+message Req {
+    string name = 1;
+}
+
+message Res {
+    string message = 1;
+}
+}
