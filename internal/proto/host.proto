@@ -1,0 +1,20 @@
+syntax = "proto3"; 
+
+package proto;
+
+// 关于主机的操作将记录到相应日志中(通过 MQ)
+service HostApi {
+    // 返回主机列表
+    rpc GetHosts(Host.scope) returns (HostList);
+}
+
+message Host {
+    string name = 1;                    // 主机名称/索引(可以用数字标识)
+    string ip = 2;                      // IP 地址
+    string domain = 3;                  // 域名
+    string scope = 4;                   // 子网/域
+}
+
+message HostList {
+    repeated Host host = 1;
+}

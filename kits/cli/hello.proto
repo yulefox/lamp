@@ -6,12 +6,17 @@ service Greeter {
     rpc SayHello(Hello.Req) returns (Hello.Res) {}
 }
 
+message Packet {
+    string type = 1;
+    bytes payload = 2;
+}
+
 message Event {
     int32 type = 1;
 }
 
 service GameService {
-    rpc Stream(stream Event) returns (stream Event);
+    rpc Tunnel(stream Packet) returns (stream Packet);
 }
 
 message Hello {

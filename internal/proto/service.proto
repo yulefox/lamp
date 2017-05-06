@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package proto;
+
+message Host {
+    int32 index = 1;
+    string name = 2;
+    string host = 3;
+    int32 port = 4;
+}

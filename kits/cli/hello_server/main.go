@@ -21,7 +21,7 @@ func (s *server) SayHello(ctx context.Context, in *pb.Hello_Req) (*pb.Hello_Res,
 	return &pb.Hello_Res{Message: "hello" + in.Name}, nil
 }
 
-func (s *server) Stream(stream pb.GameService_StreamServer) error {
+func (s *server) Tunnel(stream pb.GameService_TunnelServer) error {
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {

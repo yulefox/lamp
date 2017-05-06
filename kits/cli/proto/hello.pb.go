@@ -9,6 +9,7 @@ It is generated from these files:
 	hello.proto
 
 It has these top-level messages:
+	Packet
 	Event
 	Hello
 */
@@ -34,6 +35,30 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto1.ProtoPackageIsVersion2 // please upgrade the proto package
 
+type Packet struct {
+	Type    string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
+	Payload []byte `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
+}
+
+func (m *Packet) Reset()                    { *m = Packet{} }
+func (m *Packet) String() string            { return proto1.CompactTextString(m) }
+func (*Packet) ProtoMessage()               {}
+func (*Packet) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *Packet) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *Packet) GetPayload() []byte {
+	if m != nil {
+		return m.Payload
+	}
+	return nil
+}
+
 type Event struct {
 	Type int32 `protobuf:"varint,1,opt,name=type" json:"type,omitempty"`
 }
@@ -41,7 +66,7 @@ type Event struct {
 func (m *Event) Reset()                    { *m = Event{} }
 func (m *Event) String() string            { return proto1.CompactTextString(m) }
 func (*Event) ProtoMessage()               {}
-func (*Event) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*Event) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func (m *Event) GetType() int32 {
 	if m != nil {
@@ -56,7 +81,7 @@ type Hello struct {
 func (m *Hello) Reset()                    { *m = Hello{} }
 func (m *Hello) String() string            { return proto1.CompactTextString(m) }
 func (*Hello) ProtoMessage()               {}
-func (*Hello) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*Hello) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 type Hello_Req struct {
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
@@ -65,7 +90,7 @@ type Hello_Req struct {
 func (m *Hello_Req) Reset()                    { *m = Hello_Req{} }
 func (m *Hello_Req) String() string            { return proto1.CompactTextString(m) }
 func (*Hello_Req) ProtoMessage()               {}
-func (*Hello_Req) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1, 0} }
+func (*Hello_Req) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2, 0} }
 
 func (m *Hello_Req) GetName() string {
 	if m != nil {
@@ -81,7 +106,7 @@ type Hello_Res struct {
 func (m *Hello_Res) Reset()                    { *m = Hello_Res{} }
 func (m *Hello_Res) String() string            { return proto1.CompactTextString(m) }
 func (*Hello_Res) ProtoMessage()               {}
-func (*Hello_Res) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1, 1} }
+func (*Hello_Res) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2, 1} }
 
 func (m *Hello_Res) GetMessage() string {
 	if m != nil {
@@ -91,6 +116,7 @@ func (m *Hello_Res) GetMessage() string {
 }
 
 func init() {
+	proto1.RegisterType((*Packet)(nil), "proto.Packet")
 	proto1.RegisterType((*Event)(nil), "proto.Event")
 	proto1.RegisterType((*Hello)(nil), "proto.Hello")
 	proto1.RegisterType((*Hello_Req)(nil), "proto.Hello.Req")
@@ -172,7 +198,7 @@ var _Greeter_serviceDesc = grpc.ServiceDesc{
 // Client API for GameService service
 
 type GameServiceClient interface {
-	Stream(ctx context.Context, opts ...grpc.CallOption) (GameService_StreamClient, error)
+	Tunnel(ctx context.Context, opts ...grpc.CallOption) (GameService_TunnelClient, error)
 }
 
 type gameServiceClient struct {
@@ -183,31 +209,31 @@ func NewGameServiceClient(cc *grpc.ClientConn) GameServiceClient {
 	return &gameServiceClient{cc}
 }
 
-func (c *gameServiceClient) Stream(ctx context.Context, opts ...grpc.CallOption) (GameService_StreamClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_GameService_serviceDesc.Streams[0], c.cc, "/proto.GameService/Stream", opts...)
+func (c *gameServiceClient) Tunnel(ctx context.Context, opts ...grpc.CallOption) (GameService_TunnelClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GameService_serviceDesc.Streams[0], c.cc, "/proto.GameService/Tunnel", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &gameServiceStreamClient{stream}
+	x := &gameServiceTunnelClient{stream}
 	return x, nil
 }
 
-type GameService_StreamClient interface {
-	Send(*Event) error
-	Recv() (*Event, error)
+type GameService_TunnelClient interface {
+	Send(*Packet) error
+	Recv() (*Packet, error)
 	grpc.ClientStream
 }
 
-type gameServiceStreamClient struct {
+type gameServiceTunnelClient struct {
 	grpc.ClientStream
 }
 
-func (x *gameServiceStreamClient) Send(m *Event) error {
+func (x *gameServiceTunnelClient) Send(m *Packet) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *gameServiceStreamClient) Recv() (*Event, error) {
-	m := new(Event)
+func (x *gameServiceTunnelClient) Recv() (*Packet, error) {
+	m := new(Packet)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -217,33 +243,33 @@ func (x *gameServiceStreamClient) Recv() (*Event, error) {
 // Server API for GameService service
 
 type GameServiceServer interface {
-	Stream(GameService_StreamServer) error
+	Tunnel(GameService_TunnelServer) error
 }
 
 func RegisterGameServiceServer(s *grpc.Server, srv GameServiceServer) {
 	s.RegisterService(&_GameService_serviceDesc, srv)
 }
 
-func _GameService_Stream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(GameServiceServer).Stream(&gameServiceStreamServer{stream})
+func _GameService_Tunnel_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GameServiceServer).Tunnel(&gameServiceTunnelServer{stream})
 }
 
-type GameService_StreamServer interface {
-	Send(*Event) error
-	Recv() (*Event, error)
+type GameService_TunnelServer interface {
+	Send(*Packet) error
+	Recv() (*Packet, error)
 	grpc.ServerStream
 }
 
-type gameServiceStreamServer struct {
+type gameServiceTunnelServer struct {
 	grpc.ServerStream
 }
 
-func (x *gameServiceStreamServer) Send(m *Event) error {
+func (x *gameServiceTunnelServer) Send(m *Packet) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *gameServiceStreamServer) Recv() (*Event, error) {
-	m := new(Event)
+func (x *gameServiceTunnelServer) Recv() (*Packet, error) {
+	m := new(Packet)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -256,8 +282,8 @@ var _GameService_serviceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Stream",
-			Handler:       _GameService_Stream_Handler,
+			StreamName:    "Tunnel",
+			Handler:       _GameService_Tunnel_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
@@ -268,17 +294,19 @@ var _GameService_serviceDesc = grpc.ServiceDesc{
 func init() { proto1.RegisterFile("hello.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 190 bytes of a gzipped FileDescriptorProto
+	// 220 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xce, 0x48, 0xcd, 0xc9,
-	0xc9, 0xd7, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x05, 0x53, 0x4a, 0xd2, 0x5c, 0xac, 0xae,
-	0x65, 0xa9, 0x79, 0x25, 0x42, 0x42, 0x5c, 0x2c, 0x25, 0x95, 0x05, 0xa9, 0x12, 0x8c, 0x0a, 0x8c,
-	0x1a, 0xac, 0x41, 0x60, 0xb6, 0x92, 0x33, 0x17, 0xab, 0x07, 0x48, 0x8b, 0x94, 0x24, 0x17, 0x73,
-	0x50, 0x6a, 0x21, 0x48, 0x4d, 0x5e, 0x62, 0x2e, 0x44, 0x0d, 0x67, 0x10, 0x98, 0x2d, 0x25, 0x0f,
-	0x92, 0x2a, 0x16, 0x92, 0xe0, 0x62, 0xcf, 0x4d, 0x2d, 0x2e, 0x4e, 0x4c, 0x87, 0xc9, 0xc2, 0xb8,
-	0x46, 0xd6, 0x5c, 0xec, 0xee, 0x45, 0xa9, 0xa9, 0x25, 0xa9, 0x45, 0x42, 0x06, 0x5c, 0x1c, 0xc1,
-	0x89, 0x95, 0x60, 0x23, 0x85, 0x04, 0x20, 0xee, 0xd0, 0x03, 0xf3, 0xf4, 0x82, 0x52, 0x0b, 0xa5,
-	0xd0, 0x45, 0x8a, 0x95, 0x18, 0x8c, 0xcc, 0xb9, 0xb8, 0xdd, 0x13, 0x73, 0x53, 0x83, 0x53, 0x8b,
-	0xca, 0x32, 0x93, 0x53, 0x85, 0x34, 0xb8, 0xd8, 0x82, 0x4b, 0x8a, 0x52, 0x13, 0x73, 0x85, 0x78,
-	0xa0, 0x8a, 0xc1, 0x8e, 0x97, 0x42, 0xe1, 0x69, 0x30, 0x1a, 0x30, 0x26, 0xb1, 0x81, 0x05, 0x8c,
-	0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0x86, 0xbc, 0x38, 0x4e, 0xf4, 0x00, 0x00, 0x00,
+	0xc9, 0xd7, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x05, 0x53, 0x4a, 0x66, 0x5c, 0x6c, 0x01,
+	0x89, 0xc9, 0xd9, 0xa9, 0x25, 0x42, 0x42, 0x5c, 0x2c, 0x25, 0x95, 0x05, 0xa9, 0x12, 0x8c, 0x0a,
+	0x8c, 0x1a, 0x9c, 0x41, 0x60, 0xb6, 0x90, 0x04, 0x17, 0x7b, 0x41, 0x62, 0x65, 0x4e, 0x7e, 0x62,
+	0x8a, 0x04, 0x93, 0x02, 0xa3, 0x06, 0x4f, 0x10, 0x8c, 0xab, 0x24, 0xcd, 0xc5, 0xea, 0x5a, 0x96,
+	0x9a, 0x87, 0xaa, 0x8d, 0x15, 0xa2, 0x4d, 0xc9, 0x99, 0x8b, 0xd5, 0x03, 0x64, 0x95, 0x94, 0x24,
+	0x17, 0x73, 0x50, 0x6a, 0x21, 0x48, 0x4d, 0x5e, 0x62, 0x2e, 0xdc, 0x68, 0x10, 0x5b, 0x4a, 0x1e,
+	0x24, 0x55, 0x0c, 0xb2, 0x21, 0x37, 0xb5, 0xb8, 0x38, 0x31, 0x1d, 0x26, 0x0b, 0xe3, 0x1a, 0x59,
+	0x73, 0xb1, 0xbb, 0x17, 0xa5, 0xa6, 0x96, 0xa4, 0x16, 0x09, 0x19, 0x70, 0x71, 0x04, 0x27, 0x56,
+	0x82, 0x8d, 0x14, 0x12, 0x80, 0xb8, 0x5f, 0x0f, 0xcc, 0xd3, 0x0b, 0x4a, 0x2d, 0x94, 0x42, 0x17,
+	0x29, 0x56, 0x62, 0x30, 0xb2, 0xe4, 0xe2, 0x76, 0x4f, 0xcc, 0x4d, 0x0d, 0x4e, 0x2d, 0x2a, 0xcb,
+	0x4c, 0x4e, 0x15, 0xd2, 0xe2, 0x62, 0x0b, 0x29, 0xcd, 0xcb, 0x4b, 0xcd, 0x11, 0xe2, 0x85, 0x2a,
+	0x86, 0x78, 0x5a, 0x0a, 0x95, 0xab, 0xc1, 0x68, 0xc0, 0x98, 0xc4, 0x06, 0x16, 0x31, 0x06, 0x04,
+	0x00, 0x00, 0xff, 0xff, 0x95, 0xb0, 0xa0, 0xe2, 0x2e, 0x01, 0x00, 0x00,
 }
